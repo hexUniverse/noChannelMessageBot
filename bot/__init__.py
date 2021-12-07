@@ -35,6 +35,7 @@ class Bot(CustomMethods):
             device_model=self.device_model,
             api_id=os.getenv("API_ID"),
             api_hash=os.getenv("API_HASH"),
+            bot_token=os.getenv("BOT_TOKEN"),
             test_mode=test_mode,
             plugins=None,
             system_version=self.system_version
