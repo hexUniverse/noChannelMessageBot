@@ -14,7 +14,10 @@ async def ban_channel_message(cli: Client, msg: Message) -> None:
     me: pyrogram.types.User = await cli.get_me()
     chat: pyrogram.types.Chat = await cli.get_chat(msg.chat.id)
 
-    white_list: list = [msg.chat.id, chat.linked_chat.id]
+    white_list: list = [msg.chat.id]
+
+    if chat.linked_chat:
+        white_list.append(chat.linked_chat.id)
 
     # allow: linked_chat, anonymous_admin
     if msg.sender_chat and msg.sender_chat.id not in white_list:
