@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 import pyrogram
@@ -32,5 +33,7 @@ async def ban_channel_message(cli: Client, msg: Message) -> None:
             return
 
         await msg.delete()
-        await msg.reply("Channel message is not allowed!")
+        return_message: pyrogram.types.Message = await msg.reply("Channel message is not allowed!")
         await cli.kick_chat_member(msg.chat.id, msg.sender_chat.id)
+        await asyncio.sleep(10)
+        await cli.delete_messages(return_message.chat.id, return_message.message_id)
