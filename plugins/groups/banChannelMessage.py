@@ -12,7 +12,7 @@ log: logging.Logger = logging.getLogger(__name__)
 
 @Client.on_message(filters.group & ~ filters.service)
 async def ban_channel_message(cli: Client, msg: Message) -> None:
-    me: pyrogram.types.User = await cli.get_me()
+    me: pyrogram.types.User = main.bot.me
     chat: pyrogram.types.Chat = await cli.get_chat(msg.chat.id)
 
     white_list: list = [msg.chat.id]
@@ -24,6 +24,7 @@ async def ban_channel_message(cli: Client, msg: Message) -> None:
     if msg.sender_chat and msg.sender_chat.id not in white_list:
         # check permission, leave if no permission
         permission: pyrogram.types.ChatMember = await cli.get_chat_member(msg.chat.id, me.id)
+
         if not (permission.can_delete_messages and permission.can_restrict_members):
             # permission not allowed
             await cli.leave_chat(msg.chat.id)
