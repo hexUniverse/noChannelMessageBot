@@ -1,46 +1,46 @@
-use std::pin::pin;
-use grammers_client::{Client, Config, InitParams, Update};
-use grammers_tl_types as tl;
-use grammers_session::Session;
-use tokio::{task};
-use futures_util::future::{select, Either};
-use dotenv;
 use std::env;
+use std::pin::pin;
 use std::time::Duration;
-use grammers_client::types::{Chat};
+
+use dotenv;
+use futures_util::future::{select, Either};
+use grammers_client::{Client, Config, InitParams, Update};
+use grammers_session::Session;
+use grammers_tl_types as tl;
+use grammers_tl_types::enums;
+use grammers_tl_types::types;
+use tokio::task;
 
 const SESSION_FILE: &str = "bot.session";
-const CHANNEL: i32 = env::var("TG_CHANNEL").expect("Not Found Env").parse().expect("CHANNEL invalid");
-const TOPIC: i32 = env::var("TG_TOPIC").expect("Not Found Env").parse().expect("TOPIC invalid");
-
-
 
 async fn handle_update(client: Client, update: Update) -> Result<(), Box<dyn std::error::Error>> {
     match update {
         Update::NewMessage(message) if !message.outgoing() => {
             let chat = message.chat();
             match message.sender().unwrap() {
-                Chat::Channel(target) => {
-                    message.delete().await.unwrap();
+                grammers_client::types::Chat::Channel(target) => {
+                    let _ = message.delete().await.map_err(|e| "");
                     match client
                         .set_banned_rights(&chat, &target)
                         .view_messages(false)
                         .send_messages(false)
                         .duration(Duration::from_secs(1))
-                        .await {
+                        .await
+                    {
                         Ok(_) => {
                             message.reply("本群組不允許頻道發言。").await?;
                         }
-                        Err(_) => {
-                            todo!("leave channel")
-                            // client.invoke(
-                            // &tl::functions::channels::LeaveChannel {
-                            //     channel: chat::Channel,
-                            // }).await?;
+                        Err(e) => {
+                            client
+                                .invoke(&tl::functions::channels::LeaveChannel {
+                                    channel: enums::InputChannel::Channel(types::InputChannel {
+                                        channel_id: chat.id(),
+                                        access_hash: chat.pack().access_hash.unwrap(),
+                                    }),
+                                })
+                                .await?;
                         }
                     }
-
-
                 }
                 _ => {}
             }
@@ -54,11 +54,12 @@ async fn handle_update(client: Client, update: Update) -> Result<(), Box<dyn std
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv::from_filename(".env").expect("Failed to load .env file");
-    let api_id = env::var("API_ID").expect("Not Found Env").parse().expect("TG_ID invalid");
+    let api_id = env::var("API_ID")
+        .expect("Not Found Env")
+        .parse()
+        .expect("TG_ID invalid");
     let api_hash = env::var("API_HASH").expect("Not Found Env").to_string();
-    println!("API_ID: {}, API_HASH: {}", &api_id, &api_hash);
     let token = env::var("BOT_TOKEN").expect("Not Found Env");
-
     println!("Connecting to Telegram...");
     let client = Client::connect(Config {
         session: Session::load_file_or_create(SESSION_FILE).unwrap(),
@@ -70,7 +71,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             ..Default::default()
         },
     })
-        .await.unwrap();
+    .await
+    .unwrap();
     println!("Connected!");
 
     if !client.is_authorized().await.unwrap() {
@@ -80,7 +82,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Signed in!");
     }
     println!("Waiting for messages...");
-
 
     loop {
         let update = {
