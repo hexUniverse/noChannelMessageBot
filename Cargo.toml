@@ -1,0 +1,17 @@
+[package]
+name = "noChannelMessageBot"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+grammers-client = { version = "0.5.0", features = ["markdown"] }
+grammers-crypto = "0.5.1"
+grammers-session = "0.5.1"
+grammers-tl-gen = "0.5.1"
+grammers-tl-parser = "1.1.1"
+grammers-tl-types = "0.5.1"
+tokio = { version = "1.34.0", features = ["full"] }
+futures-util = "0.3.29"
+dotenv = "0.15.0"
