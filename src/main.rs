@@ -19,7 +19,7 @@ async fn handle_update(client: Client, update: Update) -> Result<(), Box<dyn std
     match update {
         Update::NewMessage(message) if !message.outgoing() => {
             let chat = message.chat();
-            if message.sender().is_some() != false { return Ok(()) };
+            if message.sender().is_some() == false { return Ok(()) };
             match message.sender().unwrap() {
                 grammers_client::types::Chat::Channel(target) => {
                     let fullchat: types::messages::ChatFull = client
