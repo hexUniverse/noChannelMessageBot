@@ -8,7 +8,9 @@ use grammers_client::{Client, Config, InitParams, Update};
 use grammers_session::Session;
 use grammers_tl_types as tl;
 use grammers_tl_types::enums;
+use grammers_tl_types::enums::ChatFull;
 use grammers_tl_types::types;
+
 use tokio::task;
 
 const SESSION_FILE: &str = "bot.session";
@@ -19,7 +21,25 @@ async fn handle_update(client: Client, update: Update) -> Result<(), Box<dyn std
             let chat = message.chat();
             match message.sender().unwrap() {
                 grammers_client::types::Chat::Channel(target) => {
-                    let _ = message.delete().await.map_err(|e| "");
+                    let fullchat: types::messages::ChatFull = client
+                        .invoke(&tl::functions::channels::GetFullChannel {
+                            channel: enums::InputChannel::Channel(types::InputChannel {
+                                channel_id: chat.id(),
+                                access_hash: chat.pack().access_hash.unwrap(),
+                            }),
+                        })
+                        .await
+                        .unwrap()
+                        .into();
+                    match fullchat.full_chat {
+                        ChatFull::Full(_) => {}
+                        ChatFull::ChannelFull(channelfull) => {
+                            if channelfull.linked_chat_id.unwrap() == target.id() {
+                                return Ok(());
+                            }
+                        }
+                    }
+                    let _e = message.delete().await.map_err(|e| "");
                     match client
                         .set_banned_rights(&chat, &target)
                         .view_messages(false)
@@ -81,6 +101,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         client.session().save_to_file(SESSION_FILE).unwrap();
         println!("Signed in!");
     }
+    let me = client.get_me().await.unwrap();
+    println!("{:?}", me.full_name());
     println!("Waiting for messages...");
 
     loop {
